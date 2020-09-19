@@ -13,6 +13,7 @@ import (
 func main() {
 	fmt.Println("hello hometic : I'm Gopher!!")
 	r := mux.NewRouter()
+	r.HandleFunc("/", IndexHandler).Methods(http.MethodGet)
 	r.HandleFunc("/pair-device", PairDeviceHandler).Methods(http.MethodPost)
 	server := http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT")),
@@ -24,4 +25,8 @@ func main() {
 
 func PairDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"active"}`))
+}
+
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("hometic"))
 }
