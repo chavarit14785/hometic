@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -37,10 +38,25 @@ func PairDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("result : %#v\n", pd)
+	pd.insert()
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"status":"active"}`))
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hometic"))
+}
+
+func (pd PairDevice) insert() {
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	//db, err := sql.Open("postgres", "postgres://cxebbtvt:zcvqQofbKqwG-iSwVJEWJecutSonnbDP@arjuna.db.elephantsql.com:5432/cxebbtvt")
+	if err != nil {
+		log.Fatal("connect to database error", err)
+	}
+	defer db.Close()
+	_, err = db.Exec("INSERT INTO pairs VALUES ($1,$2);", pd.DeviceID, pd.UserID)
+	if err != nil {
+		log.Fatal("can't insert", err)
+	}
+	fmt.Println("insert table success.")
 }
