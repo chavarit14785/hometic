@@ -8,6 +8,12 @@ import (
 	"testing"
 )
 
+type mockInsertPairDevice struct {
+}
+
+func (i mockInsertPairDevice) insertPairDevice(pd PairDevice) {
+}
+
 func TestPairDeviceHandler(t *testing.T) {
 
 	payload := new(bytes.Buffer)
@@ -19,7 +25,9 @@ func TestPairDeviceHandler(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/pair-device", payload)
 
 	rec := httptest.NewRecorder()
-	PairDeviceHandler(rec, req)
+
+	h := PairDeviceHandler(mockInsertPairDevice{})
+	h.ServeHTTP(rec, req)
 
 	if http.StatusOK != rec.Code {
 		t.Error("expect 200 OK", rec.Code)
