@@ -1,15 +1,26 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func Test(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/pair-device", nil)
+func TestPairDeviceHandler(t *testing.T) {
+
+	payload := new(bytes.Buffer)
+	json.NewEncoder(payload).Encode(
+		PairDevice{
+			DeviceID: 1234,
+			UserID:   4433,
+		})
+	req := httptest.NewRequest(http.MethodPost, "/pair-device", payload)
+
 	rec := httptest.NewRecorder()
 	PairDeviceHandler(rec, req)
+
 	if http.StatusOK != rec.Code {
 		t.Error("expect 200 OK", rec.Code)
 	}
