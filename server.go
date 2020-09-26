@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,8 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/chavarit14785/hometic/logger"
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 
 	_ "github.com/lib/pq"
 )
@@ -25,7 +24,7 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.Use(Middleware)
+	r.Use(logger.Middleware)
 	r.Handle("/pair-device", PairDeviceHandler(NewCreatePairDevice(db))).Methods(http.MethodPost)
 
 	addr := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
@@ -39,16 +38,6 @@ func main() {
 	log.Println("starting...")
 	log.Fatal(server.ListenAndServe())
 }
-func Middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := zap.NewExample()
-		l = l.With(zap.Namespace("hometic"), zap.String("I'm", "gopher"))
-		l.Info("Middleware Start")
-		log := context.WithValue(r.Context(), "logger", l)
-		next.ServeHTTP(w, r.WithContext(log))
-		l.Info("Middleware Stop")
-	})
-}
 
 type Pair struct {
 	DeviceID int64
@@ -57,7 +46,7 @@ type Pair struct {
 
 func PairDeviceHandler(device Device) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.Context().Value("logger").(*zap.Logger).Info("pair-device")
+		logger.Get(r.Context()).Info("pair-device")
 		var p Pair
 		err := json.NewDecoder(r.Body).Decode(&p)
 		if err != nil {
