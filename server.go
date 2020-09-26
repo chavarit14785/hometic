@@ -9,64 +9,47 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+	_ "github.com/lib/pq"
 )
 
-// git init, git add server.go go.mod, git commit -m "[Nong] init project"
 func main() {
 	fmt.Println("hello hometic : I'm Gopher!!")
 	r := mux.NewRouter()
-	r.HandleFunc("/", IndexHandler).Methods(http.MethodGet)
-	r.HandleFunc("/pair-device", PairDeviceHandler(insertPairDevice{})).Methods(http.MethodPost)
+	r.HandleFunc("/pair-device", PairDeviceHandler).Methods(http.MethodPost)
+	addr := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
+	fmt.Println("addr:", addr)
 	server := http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT")),
+		Addr:    addr,
 		Handler: r,
 	}
 	log.Println("starting...")
 	log.Fatal(server.ListenAndServe())
 }
 
-type PairDevice struct {
-	DeviceID int `json:"DeviceID"`
-	UserID   int `json:"UserID"`
-}
-type Device interface {
-	insertPairDevice(pd PairDevice)
+type Pair struct {
+	DeviceID int64
+	UserID   int64
 }
 
-type InsertPairDeviceFunc func(pd PairDevice)
-
-func PairDeviceHandler(device Device) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var pd PairDevice
-		err := json.NewDecoder(r.Body).Decode(&pd)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		fmt.Printf("result : %#v\n", pd)
-		device.insertPairDevice(pd)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"active"}`))
+func PairDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	var p Pair
+	err := json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err.Error())
+		return
 	}
-}
-
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hometic"))
-}
-
-type insertPairDevice struct {
-}
-
-func (i insertPairDevice) insertPairDevice(pd PairDevice) {
+	defer r.Body.Close()
+	fmt.Printf("pair: %#v\n", p)
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatal("connect to database error", err)
+		log.Fatal(err)
 	}
-	defer db.Close()
-	_, err = db.Exec("INSERT INTO pairs VALUES ($1,$2);", pd.DeviceID, pd.UserID)
+	_, err = db.Exec("INSERT INTO pairs VALUES ($1,$2);", p.DeviceID, p.UserID)
 	if err != nil {
-		log.Fatal("can't insert", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(err.Error())
+		return
 	}
-	fmt.Println("insert table success.")
+	w.Write([]byte(`{"status":"active"}`))
 }
