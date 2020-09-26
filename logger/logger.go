@@ -7,6 +7,10 @@ import (
 	"go.uber.org/zap"
 )
 
+type logkey string
+
+const key logkey = "logger"
+
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		l := zap.NewExample()
@@ -19,7 +23,7 @@ func Middleware(next http.Handler) http.Handler {
 }
 
 func Get(ctx context.Context) *zap.Logger {
-	val := ctx.Value("logger")
+	val := ctx.Value(key)
 	if val == nil {
 		return zap.NewExample()
 	}
