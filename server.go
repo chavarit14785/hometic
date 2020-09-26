@@ -16,7 +16,12 @@ import (
 
 func main() {
 	fmt.Println("hello hometic : I'm Gopher!!")
-
+	err := run()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func run() error {
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +41,7 @@ func main() {
 	}
 
 	log.Println("starting...")
-	log.Fatal(server.ListenAndServe())
+	return server.ListenAndServe()
 }
 
 type Pair struct {
